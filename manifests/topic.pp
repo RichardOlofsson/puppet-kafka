@@ -37,7 +37,14 @@ define kafka::topic(
     exec { "create topic ${name}":
       path    => "/usr/bin:/usr/sbin/:/bin:/sbin:${bin_dir}",
       command => "kafka-topics.sh --create ${_zookeeper} ${_replication_factor} ${_partitions} --topic ${name} ${_config}",
-      unless  => "kafka-topics.sh --list ${_zookeeper} | grep -x ${name}",
+      unless  => "echo $kafkatopics|perl -lne 'if ( /${name}/ ) { exit 0 } else { exit 1 }'",
+    }
+  }
+  if $ensure == 'absent' {
+    exec { "remove topic ${name}":
+      path        => '/usr/bin:/usr/sbin/:/bin:/sbin:/opt/kafka/bin',
+      command     => "/opt/kafka/bin/kafka-topics.sh --list ${_zookeeper} --topic ${name}",
+      onlyif      => "echo $kafkatopics|perl -lne 'if ( /${name}/ ) { exit 0 } else { exit 1 }'",
     }
   }
 }
